@@ -21,19 +21,22 @@ public class MesaService extends BaseService<Mesa, MesaRepository> {
 	private MesaItemRepository mesaItemRepository;
 
 	@Transactional
-	public void adicionarItem(MesaItem mesaItem, Long idMesa) {
+	public Optional<Mesa> adicionarItem(MesaItem mesaItem, Long idMesa) {
+		Boolean entrou = false;
 		try {
 			Optional<Mesa> mesa = Optional.of(mesaRepository.getById(idMesa));
 			if (mesa.isPresent()) {
 				if (verificarSeItemJaFoiIncluidoNaMesa(mesaItem.getProduto().getId())) {
 					mesa.get().getItens().add(mesaItem);
 					mesa.get().setItens(mesa.get().getItens());
-					salvar(mesa.get());
+					entrou = true;
 				}
 			}
+			return (entrou) ? salvar(mesa.get()) : Optional.empty();
 		} catch (Exception e) {
 			throw e;
 		}
+
 	}
 
 	@Transactional
@@ -43,10 +46,11 @@ public class MesaService extends BaseService<Mesa, MesaRepository> {
 
 	public Boolean verificarSeItemJaFoiIncluidoNaMesa(Long idItem) {
 		Boolean validou = false;
-		MesaItem item = mesaItemRepository.retornarPorIdProduto(idItem);
-		if (item != null) {
+		Optional<MesaItem> item = Optional.ofNullable(mesaItemRepository.retornarPorIdProduto(idItem));
+		if (item.isPresent()) {
 			validou = false;
-			throw new RuntimeException("Atenção item ja foi incluido nesta mesa !");
+			item.orElseThrow(() -> new RuntimeException("Atenção item ja foi incluido nesta mesa !"));
+
 		} else {
 			validou = true;
 		}
